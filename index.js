@@ -15,7 +15,7 @@ app.use(express.json());
 app.get('/api', async (req, res) => {
   try {
     const data = await fs.readFile(
-      path.join(__dirname, 'schedule.json'),
+      path.join(__dirname, 'future_dates.json'),
       'utf8',
     );
     res.json(JSON.parse(data));
