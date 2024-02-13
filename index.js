@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
+import { writeFutureDatesJson } from './createJSON.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -15,7 +16,7 @@ app.use(express.json());
 app.get('/api', async (req, res) => {
   try {
     const data = await fs.readFile(
-      path.join(__dirname, 'future_dates.json'),
+      path.join(__dirname, 'schedule.json'),
       'utf8',
     );
     res.json(JSON.parse(data));
@@ -42,7 +43,7 @@ app.post('/api/orders', async (req, res) => {
     res.status(500).send('Ошибка при записи файла: ' + err);
   }
 });
-
+writeFutureDatesJson();
 updateJsonFile();
 
 app.listen(port, () => {

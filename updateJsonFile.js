@@ -5,53 +5,73 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const jsonFilePath = path.join(__dirname, 'schedule.json');
+const futureDatesFilePath = path.join(__dirname, 'future_dates.json');
 
-const generateRandomTimes = () => {
-  const hours = [];
-  const startHour = 10,
-    endHour = 20;
-  const numTimes = Math.floor(Math.random() * 5) + 4;
+const getNextMonth = currentMonth => {
+  const monthsInRussian = [
+    'январь',
+    'февраль',
+    'март',
+    'апрель',
+    'май',
+    'июнь',
+    'июль',
+    'август',
+    'сентябрь',
+    'октябрь',
+    'ноябрь',
+    'декабрь',
+  ];
 
-  while (hours.length < numTimes) {
-    const hour =
-      Math.floor(Math.random() * (endHour - startHour + 1)) + startHour;
-    if (!hours.includes(hour)) {
-      hours.push(hour);
-    }
-  }
+  const currentMonthIndex = monthsInRussian.indexOf(currentMonth);
+  const nextMonthIndex = (currentMonthIndex + 1) % 12;
 
-  return hours.sort();
+  return monthsInRussian[nextMonthIndex];
 };
 
 export const updateJsonFile = async () => {
   try {
     const data = await fs.readFile(jsonFilePath, 'utf8');
     const schedule = JSON.parse(data);
-
+    const futureDatesData = await fs.readFile(futureDatesFilePath, 'utf8');
+    const futureDates = JSON.parse(futureDatesData);
+    // Получаем текущую дату
     const today = new Date();
-    const futureDate = new Date();
-    futureDate.setDate(today.getDate() + 60);
-
     const todayMonth = today.toLocaleString('ru-RU', { month: 'long' });
-    const futureMonth = futureDate.toLocaleString('ru-RU', { month: 'long' });
     const todayDay = today.getDate().toString();
-    const futureDay = futureDate.getDate().toString();
-
     schedule.forEach(item => {
       if (item.date) {
-        // Удаление текущего дня
-        const currentMonthData = item.date.find(m => m.month === todayMonth);
-        if (currentMonthData && currentMonthData.day[todayDay]) {
-          delete currentMonthData.day[todayDay];
-        }
+        item.date.forEach(monthData => {
+          if (
+            monthData.month !== todayMonth &&
+            monthData.month !== getNextMonth(todayMonth) &&
+            monthData.month !== getNextMonth(getNextMonth(todayMonth))
+          ) {
+            monthData.day = {};
+          } else if (monthData.month === todayMonth) {
+            //Очищаем все предыдущие даты в этом месяце
+            const todayDayInt = parseInt(todayDay, 10);
+            const monthDayKeys = Object.keys(monthData.day).map(Number);
+            monthDayKeys.forEach(day => {
+              if (day <= todayDayInt) {
+                delete monthData.day[day];
+              }
+            });
+          }
+        });
+      }
+    });
+    schedule.forEach(item => {
+      if (item.date) {
+        item.date.forEach(monthData => {
+          const futureMonthData = futureDates.date.find(m => m.month === monthData.month);
 
-        // Добавление нового дня
-        let futureMonthData = item.date.find(m => m.month === futureMonth);
-        if (!futureMonthData) {
-          futureMonthData = { month: futureMonth, day: {} };
-          item.date.push(futureMonthData);
-        }
-        futureMonthData.day[futureDay] = generateRandomTimes();
+          if (futureMonthData) {
+            Object.keys(futureMonthData.day).forEach(day => {
+              monthData.day[day] = futureMonthData.day[day];
+            });
+          }
+        });
       }
     });
 

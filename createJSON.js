@@ -52,7 +52,7 @@ const generateFutureDatesJson = () => {
   return jsonData;
 };
 
-const writeFutureDatesJson = async () => {
+export const writeFutureDatesJson = async () => {
   try {
     const futureDatesJson = generateFutureDatesJson();
     await fs.writeFile(
@@ -66,4 +66,4 @@ const writeFutureDatesJson = async () => {
   }
 };
 
-writeFutureDatesJson();
+// writeFutureDatesJson();
